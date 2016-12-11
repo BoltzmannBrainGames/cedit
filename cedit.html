@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset = "UTF-8">
+<title>cedit</title>
+
+<script src="lib/pixi.js"></script>
+<script src="cedit.js"></script>
+<script>
+	window.onload = function() {
+		if ('serviceWorker' in navigator) {
+		  navigator.serviceWorker.register('/cedit/cedit-sw.js', {scope: '/cedit/'})
+			  .then(function(reg) {
+					// registration worked
+					console.log('Registration succeeded. Scope is ' + reg.scope);
+				 }).catch(function(error) {
+				   // registration failed
+				   console.log('Registration failed with ' + error);
+				 });
+		} else {
+			alert("Service workers not available in your old azz browser");
+			console.log("Get a new browser");
+		}
+
+		let cedit = new CEdit();
+
+		cedit.setup().
+			then(function(cedit) {
+				console.log("Dumping CEDIT FROM HTML");
+				console.log(cedit);
+				cedit.run();
+			}).catch( function(error) {
+				console.log("Caught setup error: ", error);
+			});
+};
+</script>
+<style>
+cedit {
+	display: block;
+	background-color: #dddddd;
+	padding: 50px;
+	font-size: 30px;
+}
+</style>
+</head>
+
+<body>
+<cedit>cedit Element</cedit> 
+</body>
+
+</html>
