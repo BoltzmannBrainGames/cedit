@@ -9,8 +9,9 @@ const URLS_TO_CACHE = [
 "/cedit/icons/",
 "/cedit/icons/icon-pencil.png",
 "/cedit/icons/icon-eraser.png",
-"/cedit/icons/icon-hand.png"
-"/cedit/icons/icon-eye.png"`
+"/cedit/icons/icon-hand.png",
+"/cedit/icons/icon-eye.png",
+"/cedit/icons/icon-eye-closed.png"
 ];
 
 self.addEventListener("install", function(event) {

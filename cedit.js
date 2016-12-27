@@ -37,6 +37,27 @@ const HAND_PAINT_TOOL = "HAND_PAINT_TOOL";
 const PENCIL_PAINT_TOOL = "PENCIL_PAINT_TOOL";
 const ERASER_PAINT_TOOL = "ERASER_PAINT_TOOL";
 
+
+const STAGE_BORDER_THICKNESS = 2;
+
+const BORDERED_STAGE_WIDTH = ONE_INCH * 10;
+const BORDERED_STAGE_HEIGHT = ONE_INCH * 6;
+const DRAWING_AREA_WIDTH = 5 * ONE_INCH;
+const DRAWING_AREA_HEIGHT = 5 * ONE_INCH;
+const SCROLLBAR_THICKNESS = ONE_QUARTER_INCH;
+
+
+const LAYER_BOX_ROW_THICKNESS = ONE_SIXTH_INCH;
+
+const EYE_ICON_WIDTH = LAYER_BOX_ROW_THICKNESS;
+const EYE_ICON_HEIGHT = EYE_ICON_WIDTH;
+
+const LAYER_BOX_WIDTH = ONE_INCH + ONE_HALF_INCH;
+const LAYER_BOX_HEIGHT = 3 * ONE_INCH;
+
+const LAYER_BOX_TEXT_WIDTH = LAYER_BOX_WIDTH - SCROLLBAR_THICKNESS - EYE_ICON_WIDTH;
+
+
 function CEdit() {
 	let methodName = arguments.callee.name;
 	console.log(">>> %s", methodName);
@@ -49,12 +70,8 @@ function CEdit() {
 	if (!element) { element = document.body; }
 
 
-	let borderThickness = 2;
-	this.borderedWidth = ONE_INCH * 10;
-	this.borderedHeight = ONE_INCH * 6;
-
-	this.width = this.borderedWidth + 2 * borderThickness;
-	this.height = this.borderedHeight + 2 * borderThickness;
+	this.width = BORDERED_STAGE_WIDTH + 2 * STAGE_BORDER_THICKNESS;
+	this.height = BORDERED_STAGE_HEIGHT + 2 * STAGE_BORDER_THICKNESS;
 	this.backgroundColor = 0xdddddd;
 
 	this.fgDrawColor = 0x000000;
@@ -78,20 +95,6 @@ function CEdit() {
 	// Create a container object called the 'stage'
 	this.stage = new PIXI.Container();
 
-
-	this.borderedStage = new PIXI.Container();
-	this.borderedStage.x = borderThickness;
-	this.borderedStage.y = borderThickness;
-
-	this.borderedStage.interactive = true;
-	this.borderedStage.hitArea = 
-		new PIXI.Rectangle(
-			0, 0,
-			this.borderedWidth, 
-			this.borderedHeight);
-	this.borderedStage.on("mousedown", function (eventData) { inst.onMouseDown(eventData); } );
-	this.borderedStage.on("mouseup", function (eventData) { inst.onMouseUp(eventData); } );
-
 	this.stageGraphics = new PIXI.Graphics();
 	let sG = this.stageGraphics;
 	sG.lineStyle(0,0x000000,1); //lineWidth, color , alpha
@@ -99,19 +102,35 @@ function CEdit() {
 	sG.drawRect(0,0,this.width,this.height);
 	sG.endFill();
 	sG.beginFill(this.backgroundColor, 1);
-	sG.drawRect(this.borderedStage.x,this.borderedStage.y,this.borderedWidth,this.borderedHeight);
+	sG.drawRect(
+		STAGE_BORDER_THICKNESS,STAGE_BORDER_THICKNESS,
+		BORDERED_STAGE_WIDTH,BORDERED_STAGE_HEIGHT);
 	sG.endFill();
 	this.stage.addChild(this.stageGraphics);
 
 
+	this.borderedStage = new PIXI.Container();
+	this.borderedStage.x = STAGE_BORDER_THICKNESS;
+	this.borderedStage.y = STAGE_BORDER_THICKNESS;
+
+	this.borderedStage.interactive = true;
+	this.borderedStage.hitArea = 
+		new PIXI.Rectangle(
+			0, 0,
+			BORDERED_STAGE_WIDTH, 
+			BORDERED_STAGE_HEIGHT);
+	this.borderedStage.on("mousedown", function (eventData) { inst.onMouseDown(eventData); } );
+	this.borderedStage.on("mouseup", function (eventData) { inst.onMouseUp(eventData); } );
+	this.stage.addChild(this.borderedStage);
+
+
 
 	this.drawingAreaContainer = new PIXI.Container();
-
-
 	this.drawingAreaContainer.x = 0;
 	this.drawingAreaContainer.y = 0;
 
-	let drawingAreaRect = new PIXI.Rectangle(0,0, 5 * ONE_INCH, 5 * ONE_INCH ); 
+	let drawingAreaRect = 
+		new PIXI.Rectangle(0,0, DRAWING_AREA_WIDTH, DRAWING_AREA_HEIGHT); 
 	this.drawingAreaMask = this.makeRectMask(drawingAreaRect);
 	this.drawingAreaContainer.addChild(this.drawingAreaMask);
 	this.drawingAreaGraphics = 
@@ -126,27 +145,46 @@ function CEdit() {
 
 	this.borderedStage.addChild(this.drawingAreaContainer);
 
+
+	this.layers = [];
+	this.layers.push(new CEdit.Layer("Background"));
+	this.layers.push(new CEdit.Layer("Layer1", false));
+	this.layers.push(new CEdit.Layer("Layer2", true));
+	this.layers.push(new CEdit.Layer("Layer3", true));
+	this.layers.push(new CEdit.Layer("Layer4", true));
+	this.layers.push(new CEdit.Layer("Layer5", true));
+	this.layers.push(new CEdit.Layer("Layer6", true));
+	this.layers.push(new CEdit.Layer("Layer7", true));
+	this.layers.push(new CEdit.Layer("Layer8", true));
+	this.layers.push(new CEdit.Layer("Layer9", true));
+	this.layers.push(new CEdit.Layer("Layer10", true));
+	this.layers.push(new CEdit.Layer("Layer11", true));
+	this.layers.push(new CEdit.Layer("Layer12", true));
+	this.layers.push(new CEdit.Layer("Layer13", true));
+	this.layers.push(new CEdit.Layer("Layer14", true));
+	this.layers.push(new CEdit.Layer("Layer15", true));
+	this.layers.push(new CEdit.Layer("Layer16", true));
+	this.layers.push(new CEdit.Layer("Layer17", true));
+	this.layers.push(new CEdit.Layer("Layer18", true));
+	this.layers.push(new CEdit.Layer("Layer19", true));
+	this.layers.push(new CEdit.Layer("Layer20", true));
+
 	this.layerBoxContainer = new PIXI.Container();
-	this.layerBoxContainer.x = 5 * ONE_INCH + ONE_HALF_INCH;
+	this.layerBoxContainer._cedit = {};
+	this.layerBoxContainer.x = DRAWING_AREA_WIDTH + SCROLLBAR_THICKNESS;
 	this.layerBoxContainer.y = 0;
 	let layerBoxRect = new PIXI.Rectangle(
 		0, 0,
-		ONE_INCH + ONE_HALF_INCH, 3 * ONE_INCH );
-//	this.layerBoxMask = this.makeRectMask(layerBoxRect);
-//	this.layerBoxContainer.addChild(this.layerBoxMask);
-	this.layerBoxGraphics = this.makeLayerBox(layerBoxRect);
-	this.layerBoxContainer.addChild(this.layerBoxGraphics);
-//	this.layerBoxGraphics.mask = this.layerBoxMask;
-
+		SCROLLBAR_THICKNESS + LAYER_BOX_WIDTH, LAYER_BOX_HEIGHT);
+	this.makeLayerBox(this.layerBoxContainer,layerBoxRect);
 	this.borderedStage.addChild(this.layerBoxContainer);
 
 
 	this.paintToolboxContainer = new PIXI.Container();
-	this.paintToolboxContainer.x = 5 * ONE_INCH + ONE_HALF_INCH;
+	this.paintToolboxContainer.x = DRAWING_AREA_WIDTH + 2 * SCROLLBAR_THICKNESS;
 	this.paintToolboxContainer.y = 4 * ONE_INCH;
 	this.borderedStage.addChild(this.paintToolboxContainer);
 
-	this.stage.addChild(this.borderedStage);
 
 	// Tell tbhe 'renderer' to 'render' the 'stage'
 	this.renderer.render(this.stage);
@@ -232,7 +270,7 @@ CEdit.prototype = {
 		}
 		return g;
 	},
-	makeLayerBox: function(layerBoxRect) {
+	makeLayerBox: function(container, layerBoxRect) {
 		let g = new PIXI.Graphics();
 		console.log("LAYER BOX RECT" );
 		console.log(layerBoxRect);
@@ -249,10 +287,104 @@ CEdit.prototype = {
 		for (let r = 0; r < rows; r++) {
 			g.lineStyle(1,borderColor);
 			g.beginFill(bgColor);
-			g.drawRect(0,r * itemHeight, itemWidth, itemHeight);
+			g.drawRect(
+				ONE_QUARTER_INCH,r * itemHeight, 
+				itemWidth - ONE_QUARTER_INCH, itemHeight);
 			g.endFill();
 		}
-		return g;
+		container.addChild(g);
+		this.makeLayerBoxSlider(container, layerBoxRect.height);
+		this.makeLayerBoxTexts(container, layerBoxRect);
+	},
+	makeLayerBoxSlider: function(container, height) {
+		let g = new PIXI.Graphics();
+		let inst = this;
+		let width = ONE_QUARTER_INCH;
+		let borderColor = 0x000000;
+		let bgColor = 0xd0d0d0;	
+		g.lineStyle(1,borderColor);
+		g.beginFill(bgColor);
+		g.drawRect(0,0, width,height);
+		g.endFill();
+		container.addChild(g);
+	},
+	makeLayerBoxTexts: function(container) {
+		let rows = LAYER_BOX_HEIGHT / LAYER_BOX_ROW_THICKNESS;
+		
+		let borderSize = 1;
+		for (let r = 0; r < rows; r++) {
+			if (r < this.layers.length) {
+				let text = this.makeLayerBoxText(container, r);
+				this.layers[r].text = text;
+				container.addChild(text);
+			}
+		}
+	},
+	makeLayerBoxText: function(container,layerIndex) {
+		let inst = this;
+
+		if (layerIndex >= inst.layers.length ) {
+			console.log("Called makeLayerBoxText for layerIndex out of bounds: " + layerIndex );
+			return null;
+		}
+		let style = {
+			fontFamily: "Arial",
+			fontSize: "9px",
+			wordWrap: false,
+			stroke: "#000000"
+		};
+
+		let text = new PIXI.Text(inst.layers[layerIndex].name, style);
+		text.layerIndex = layerIndex;
+
+		text.x = LAYER_BOX_WIDTH - LAYER_BOX_TEXT_WIDTH;
+		text.y = layerIndex * LAYER_BOX_ROW_THICKNESS + (LAYER_BOX_ROW_THICKNESS / 2);
+
+		text.anchor = new  PIXI.Point(0,0.5);
+		text.interactive = true;
+		text.hitArea = new PIXI.Rectangle(0,-0.5 * LAYER_BOX_ROW_THICKNESS,LAYER_BOX_TEXT_WIDTH, LAYER_BOX_ROW_THICKNESS);
+		text.on("mousedown", function(e) {
+			let thisText = text;
+			let li = thisText.layerIndex;	
+			let oldName = inst.layers[li].name;
+			let newName = window.prompt("Enter new layer name", oldName); 
+			e.stopPropagation();
+
+			if (newName == null) {
+				console.log("User canceled: not changing text");
+			} else if (newName == "") {
+				let answer = window.confirm("Are you sure you want to delete the layer named " + oldName + "?" );
+				if (answer == true) {
+					console.log("Deleting layer " + li);
+					inst.layers[li].remove(container);
+					inst.layers.splice(li,1); // delete from array and reindex
+					for (let i = li; i < ( inst.layers.length - 1); i++) {
+						if ( i * LAYER_BOX_ROW_THICKNESS < LAYER_BOX_HEIGHT ) {
+							if (inst.layers[i] != null && inst.layers[i].text != null ) {
+								inst.layers[i].text.y -= LAYER_BOX_ROW_THICKNESS;
+								inst.layers[i].text.layerIndex = i;
+							} else {
+								let text = inst.makeLayerBoxText(container,i);
+								inst.layers[i].text = text;
+								container.addChild(text);
+							}
+							if (inst.layers[i].eyeSprite != null ) {
+								inst.layers[i].eyeSprite.y -= LAYER_BOX_ROW_THICKNESS;
+							} else {
+								let eyeSprite =  inst.icons.makeEyeSprite(inst, i);
+								inst.layers[i].eyeSprite = eyeSprite;
+								container.addChild(eyeSprite);
+							}
+						}
+					} 
+				}
+			} else {
+				inst.layers[li].name = newName;	
+				text.text = inst.layers[li].name;
+			}
+		});
+
+		return text;
 	},
 	onDrawingAreaContainerMouseDown: function(eventData) {
 		let mousePos = eventData.data.getLocalPosition(this.drawingAreaContainer);
@@ -261,6 +393,7 @@ CEdit.prototype = {
 	onDrawingAreaContainerMouseMove: function(eventData) {
 		let mousePos = eventData.data.getLocalPosition(this.drawingAreaContainer);
 		if (this.isMouseDown(1)) {
+			console.log(this.mouseDown);
 			this.drawingAreaGraphics.lineStyle(1,this.fgDrawColor);
 			this.drawingAreaGraphics.lineTo(mousePos.x, mousePos.y);
 		} else {
@@ -276,9 +409,31 @@ CEdit.prototype = {
 	},
 	isMouseDown: function(which) {
 		return this.mouseDown[which];
-	} 
+	}
 };
 
+// CEdit.Layer
+CEdit.Layer = function(name,visible) {
+	let methodName = "CEdit.Layer()";
+	console.log(">>> %s", methodName);
+	this.classname = "CEdit.Layer";
+	this.name = name;
+	this.visible = (visible != null) ? visible : true;
+	console.log("<<< %s", methodName);
+};
+
+CEdit.Layer.prototype = {
+	constructor: CEdit.Layer,
+	remove: function(container) {
+		if (this.eyeSprite != null ) {
+			container.removeChild(this.eyeSprite);
+		}
+
+		if ( this.text != null ) {
+			container.removeChild(this.text);
+		}
+	}
+};
 
 // CEdit.Icons 
 CEdit.Icons = function() {
@@ -301,6 +456,8 @@ CEdit.Icons.ERASER = "CEdit.Icons.ERASER";
 CEdit.Icons.ERASER_URI = CEdit.Icons.DIRECTORY + "/icon-eraser.png";
 CEdit.Icons.EYE = "CEdit.Icons.EYE";
 CEdit.Icons.EYE_URI = CEdit.Icons.DIRECTORY + "/icon-eye.png";
+CEdit.Icons.EYE_CLOSED = "CEdit.Icons.EYE_CLOSED";
+CEdit.Icons.EYE_CLOSED_URI = CEdit.Icons.DIRECTORY + "/icon-eye-closed.png";
 
 
 CEdit.Icons.prototype = {
@@ -316,6 +473,7 @@ CEdit.Icons.prototype = {
 				add(CEdit.Icons.HAND, CEdit.Icons.HAND_URI).
 				add(CEdit.Icons.ERASER, CEdit.Icons.ERASER_URI).
 				add(CEdit.Icons.EYE, CEdit.Icons.EYE_URI).
+				add(CEdit.Icons.EYE_CLOSED, CEdit.Icons.EYE_CLOSED_URI).
 				on("progress", CEdit.Icons.loadProgressHandler).
 				load(function() {
 					console.log("We are done loading");
@@ -429,14 +587,19 @@ CEdit.Icons.prototype = {
 
 		console.log("<<< %s", methodName);
 	},
-	makeEyeSprite: function(cedit) {
-		let spr = new PIXI.Sprite(
-			PIXI.loader.resources[CEdit.Icons.EYE].texture);
-		let toolx = 0;
-		let tooly = 0;
+	makeEyeSprite: function(cedit, layerIndex) {
 
-		spr.x = (ONE_SIXTH_INCH * toolx); // icon width * position
-		spr.y = (ONE_SIXTH_INCH * tooly); // half an inch
+		let textureName = CEdit.Icons.EYE;
+		if ( ! cedit.layers[layerIndex].visible ) {
+			textureName = CEdit.Icons.EYE_CLOSED;
+		}
+		let spr = new PIXI.Sprite(
+			PIXI.loader.resources[textureName].texture);
+		let toolx = 0;
+		let tooly = layerIndex;
+
+		spr.x = ONE_QUARTER_INCH + (EYE_ICON_WIDTH * toolx); // icon width * position
+		spr.y = (EYE_ICON_HEIGHT * tooly); // half an inch
 
 		spr.width = spr.width * (DPI / DPI_720p);
 		spr.height = spr.height * (DPI / DPI_720p);
@@ -445,8 +608,15 @@ CEdit.Icons.prototype = {
 
 		let inst = this;
 		spr.on("mousedown", function () { 
-			console.log("CLICKED THE EYEBALL");
+			console.log("CLICKED THE EYEBALL: " + layerIndex);
+			cedit.layers[layerIndex].visible = ! cedit.layers[layerIndex].visible;
+			let tname = CEdit.Icons.EYE_CLOSED;
+			if (cedit.layers[layerIndex].visible) {
+				tname = CEdit.Icons.EYE;
+			}
+			spr.texture = PIXI.loader.resources[tname].texture;
 		});
+	
 
 		return spr;
 	},
@@ -454,9 +624,15 @@ CEdit.Icons.prototype = {
 		let methodName = "CEdit.Icons.addLayerBoxIcons(layerBoxContainer)";
 		console.log(">>> %s", methodName);
 
-		let eye = this.makeEyeSprite(cedit);
-		layerBoxContainer.addChild(eye);
-
+		let eyeY = 0;
+		for (let layerIndex = 0; layerIndex < cedit.layers.length; layerIndex++) {
+			if ( eyeY < LAYER_BOX_HEIGHT ) {
+				let eye = this.makeEyeSprite(cedit, layerIndex);
+				layerBoxContainer.addChild(eye);
+				cedit.layers[layerIndex].eyeSprite = eye;
+			}
+			eyeY += EYE_ICON_HEIGHT;
+		}
 
 		console.log("<<< %s", methodName);
 	}
