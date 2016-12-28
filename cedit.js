@@ -33,11 +33,6 @@ const ONE_12th_INCH = ONE_TWELFTH_INCH;
 const ONE_18th_INCH = ONE_EIGHTEENTH_INCH;
 const ONE_36th_INCH = ONE_QUARTER_INCH / 9;
 
-const HAND_PAINT_TOOL = "HAND_PAINT_TOOL";
-const PENCIL_PAINT_TOOL = "PENCIL_PAINT_TOOL";
-const ERASER_PAINT_TOOL = "ERASER_PAINT_TOOL";
-
-
 const STAGE_BORDER_THICKNESS = 2;
 
 const BORDERED_STAGE_WIDTH = ONE_INCH * 10;
@@ -64,9 +59,9 @@ const LAYER_BOX_TEXT_WIDTH = LAYER_BOX_WIDTH - SCROLLBAR_THICKNESS - EYE_ICON_WI
 
 
 function CEdit() {
-	let methodName = arguments.callee.name;
+	this.className = "CEdit";
+	let methodName = this.classname + "()";
 	console.log(">>> %s", methodName);
-	this.classname = "CEdit";
 	let inst = this;
 	
 	this.mouseDown = {};
@@ -171,24 +166,13 @@ function CEdit() {
 	this.layers.push(new CEdit.Layer("Layer16", true));
 	this.layers.push(new CEdit.Layer("Layer17", true));
 	this.layers.push(new CEdit.Layer("Layer18", true));
-	this.layers.push(new CEdit.Layer("Layer19", true));
-	this.layers.push(new CEdit.Layer("Layer20", true));
+	//this.layers.push(new CEdit.Layer("Layer19", true));
+	//this.layers.push(new CEdit.Layer("Layer20", true));
 
-	this.layerBoxContainer = new PIXI.Container();
-	this.layerBoxContainer._cedit = {};
-	this.layerBoxContainer.x = DRAWING_AREA_WIDTH + SCROLLBAR_THICKNESS;
-	this.layerBoxContainer.y = 0;
-	let layerBoxRect = new PIXI.Rectangle(
-		0, 0,
-		SCROLLBAR_THICKNESS + LAYER_BOX_WIDTH, LAYER_BOX_HEIGHT);
-	this.makeLayerBox(this.layerBoxContainer,layerBoxRect);
-	this.borderedStage.addChild(this.layerBoxContainer);
+	this.layerbox = new CEdit.Layerbox(this, this.borderedStage);
 
 
-	this.paintToolboxContainer = new PIXI.Container();
-	this.paintToolboxContainer.x = DRAWING_AREA_WIDTH + 2 * SCROLLBAR_THICKNESS;
-	this.paintToolboxContainer.y = 4 * ONE_INCH;
-	this.borderedStage.addChild(this.paintToolboxContainer);
+	this.toolbox = new CEdit.Toolbox(this.borderedStage);
 
 
 	// Tell tbhe 'renderer' to 'render' the 'stage'
@@ -200,19 +184,19 @@ function CEdit() {
 CEdit.prototype = {
 	constructor: CEdit,
 	setup: function() {
-		let methodName = "CEdit.setup()"
+		let methodName = this.className + ".setup()";
 		console.log(">>> %s", methodName);
 		let inst = this;
 		console.log("<<< %s", methodName);
 		return new Promise(function(resolve, reject) {
 			if (inst) {
-				let cedit_inst = inst;
+				let ceditInst = inst;
 				inst.icons = new CEdit.Icons();
 				inst.icons.load().then(function(icons){
-					inst.icons.addPaintToolboxIcons(inst.paintToolboxContainer, inst);
-					inst.icons.addLayerBoxIcons(inst.layerBoxContainer, inst);
+					inst.toolbox.addToolboxIcons(inst);
+					inst.layerbox.addLayerBoxIcons(inst);
 					// Shit is this better than a goto?
-					resolve(cedit_inst);
+					resolve(ceditInst);
 				}).catch(function(error) {
 					reject(error);
 				});
@@ -222,13 +206,12 @@ CEdit.prototype = {
 		});
 	},
 	run: function() {
-		let methodName = "CEdit.run()";
+		let methodName = this.className + ".run()";
 		console.log(">>> %s", methodName);
 		this.gameLoop();
 		console.log("<<< %s", methodName);
 	},
 	gameLoop: function() {
-		//let methodName = "CEdit.gameLoop()";
 		//console.log(">>> %s", methodName);
 
 		// enclose this.
@@ -275,144 +258,6 @@ CEdit.prototype = {
 		}
 		return g;
 	},
-	makeLayerBox: function(container, layerBoxRect) {
-		let g = new PIXI.Graphics();
-		console.log("LAYER BOX RECT" );
-		console.log(layerBoxRect);
-		let layerBoxWidth = layerBoxRect.width;
-		let layerBoxHeight = layerBoxRect.height;
-		let itemHeight = ONE_SIXTH_INCH;
-		let itemWidth = layerBoxWidth;
-		let rows = layerBoxHeight / itemHeight;
-		
-		let borderSize = 1;
-
-		let borderColor = 0x000000;
-		let bgColor = 0xd0d0d0;	
-		for (let r = 0; r < rows; r++) {
-			g.lineStyle(1,borderColor);
-			g.beginFill(bgColor);
-			g.drawRect(
-				ONE_QUARTER_INCH,r * itemHeight, 
-				itemWidth - ONE_QUARTER_INCH, itemHeight);
-			g.endFill();
-		}
-		container.addChild(g);
-		this.makeLayerBoxSlider(container, layerBoxRect.height);
-		this.makeLayerBoxTexts(container, layerBoxRect);
-	},
-	makeLayerBoxSlider: function(container, height) {
-		let g = new PIXI.Graphics();
-		let inst = this;
-		let width = ONE_QUARTER_INCH;
-		let borderColor = 0x000000;
-		let bgColor = 0xd0d0d0;	
-		g.lineStyle(1,borderColor);
-		g.beginFill(bgColor);
-		g.drawRect(0,0, width,height);
-		g.endFill();
-		container.addChild(g);
-	},
-	makeLayerBoxTexts: function(container) {
-		let rows = LAYER_BOX_HEIGHT / LAYER_BOX_ROW_THICKNESS;
-		
-		let borderSize = 1;
-		for (let r = 0; r < rows; r++) {
-			if (r < this.layers.length) {
-				let text = this.makeLayerBoxText(container, r);
-				this.layers[r].text = text;
-				container.addChild(text);
-			}
-		}
-	},
-	makeLayerBoxText: function(container,layerIndex) {
-		let inst = this;
-
-		if (layerIndex >= inst.layers.length ) {
-			console.log("Called makeLayerBoxText for layerIndex out of bounds: " + layerIndex );
-			return null;
-		}
-		let style = {
-			fontFamily: "Arial",
-			fontSize: "9px",
-			wordWrap: false,
-			stroke: "#000000"
-		};
-
-		let text = new PIXI.Text(inst.layers[layerIndex].name, style);
-		text.layerIndex = layerIndex;
-
-		text.x = LAYER_BOX_WIDTH - LAYER_BOX_TEXT_WIDTH;
-		text.y = layerIndex * LAYER_BOX_ROW_THICKNESS + (LAYER_BOX_ROW_THICKNESS / 2);
-
-		text.anchor = new  PIXI.Point(0,0.5);
-		text.interactive = true;
-		text.hitArea = new PIXI.Rectangle(0,-0.5 * LAYER_BOX_ROW_THICKNESS,LAYER_BOX_TEXT_WIDTH, LAYER_BOX_ROW_THICKNESS);
-		text.on("mousedown", function(e) {
-			let thisText = text;
-			let li = thisText.layerIndex;	
-			let oldName = inst.layers[li].name;
-			console.log(thisText._text);
-			console.log(thisText.layerIndex);
-			console.log(li);
-			console.log(inst.layers[li].text._text);
-			console.log(inst.layers[li].name);
-			let newName = window.prompt("Enter new layer name", oldName); 
-			e.stopPropagation();
-
-			if (newName == null) {
-				console.log("User canceled: not changing text");
-			} else if (newName == "") {
-				let answer = window.confirm("Are you sure you want to delete the layer named " + oldName + "?" );
-				if (answer == true) {
-					console.log("Deleting layer " + li);
-					inst.layers[li].remove(container);
-					inst.layers.splice(li,1); // delete from array and reindex
-					for (let i = li; i < ( inst.layers.length - 1); i++) {
-						if ( i * LAYER_BOX_ROW_THICKNESS < LAYER_BOX_HEIGHT ) {
-							if (inst.layers[i] != null && inst.layers[i].text != null ) {
-								inst.layers[i].text.y -= LAYER_BOX_ROW_THICKNESS;
-								inst.layers[i].text.layerIndex = i;
-							} else {
-								let text = inst.makeLayerBoxText(container,i);
-								inst.layers[i].text = text;
-								container.addChild(text);
-							}
-
-							if (inst.layers[i].eyeSprite != null ) {
-								inst.layers[i].eyeSprite.y -= LAYER_BOX_ROW_THICKNESS;
-							} else {
-								let eyeSprite =  inst.icons.makeEyeSprite(inst, i);
-								inst.layers[i].eyeSprite = eyeSprite;
-								container.addChild(eyeSprite);
-							}
-
-							if (inst.layers[i].upArrowSmallSprite != null ) {
-								inst.layers[i].upArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
-							} else {
-								let upArrowSmallSprite =  inst.icons.makeUpArrowSmallSprite(inst, i);
-								inst.layers[i].upArrowSmallSprite = upArrowSmallSprite;
-								container.addChild(upArrowSmallSprite);
-							}
-
-							if (inst.layers[i].downArrowSmallSprite != null ) {
-								inst.layers[i].downArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
-							} else {
-								let downArrowSmallSprite =  inst.icons.makeDownArrowSmallSprite(inst, i);
-								inst.layers[i].downArrowSmallSprite = downArrowSmallSprite;
-								container.addChild(downArrowSmallSprite);
-							}
-						}
-					} 
-				}
-			} else {
-				inst.layers[li].name = newName;	
-				text.text = inst.layers[li].name;
-			}
-		});
-
-		return text;
-	},
 	onDrawingAreaContainerMouseDown: function(eventData) {
 		let mousePos = eventData.data.getLocalPosition(this.drawingAreaContainer);
 		this.drawingAreaGraphics.moveTo(mousePos.x, mousePos.y);
@@ -441,9 +286,9 @@ CEdit.prototype = {
 
 // CEdit.Layer
 CEdit.Layer = function(name,visible) {
-	let methodName = "CEdit.Layer()";
+	this.className = "CEdit.Layer";
+	let methodName = this.className + "(name,visible)";
 	console.log(">>> %s", methodName);
-	this.classname = "CEdit.Layer";
 	this.name = name;
 	this.visible = (visible != null) ? visible : true;
 	console.log("<<< %s", methodName);
@@ -462,11 +307,492 @@ CEdit.Layer.prototype = {
 	}
 };
 
+// CEdit.Layerbox
+
+CEdit.Layerbox = function(cedit, parentContainer) {
+	this.className = "CEdit.Layerbox";
+	let methodName = this.className + "(cedit,parentContainer)";
+
+	console.log(">>> %s", methodName);
+
+	this.container = new PIXI.Container();
+	this.container._cedit = {}; // mix in our vars that need to be accessable
+															// given container here - lame.
+	this.container.x = DRAWING_AREA_WIDTH + SCROLLBAR_THICKNESS;
+	this.container.y = 0;
+	let layerBoxRect = new PIXI.Rectangle(
+		0, 0,
+		SCROLLBAR_THICKNESS + LAYER_BOX_WIDTH, LAYER_BOX_HEIGHT);
+	this.makeLayerBox(cedit, layerBoxRect);
+	parentContainer.addChild(this.container);
+
+	console.log("<<< %s", methodName)
+};
+
+CEdit.Layerbox.prototype = {
+	constructor: CEdit.Layerbox,
+	makeLayerBox: function(cedit, layerBoxRect) {
+		let g = new PIXI.Graphics();
+		console.log("LAYER BOX RECT" );
+		console.log(layerBoxRect);
+		let layerBoxWidth = layerBoxRect.width;
+		let layerBoxHeight = layerBoxRect.height;
+		let itemHeight = ONE_SIXTH_INCH;
+		let itemWidth = layerBoxWidth;
+		let rows = layerBoxHeight / itemHeight;
+		
+		let borderSize = 1;
+
+		let borderColor = 0x000000;
+		let bgColor = 0xd0d0d0;	
+		for (let r = 0; r < rows; r++) {
+			g.lineStyle(1,borderColor);
+			g.beginFill(bgColor);
+			g.drawRect(
+				ONE_QUARTER_INCH,r * itemHeight, 
+				itemWidth - ONE_QUARTER_INCH, itemHeight);
+			g.endFill();
+		}
+		this.container.addChild(g);
+		this.makeLayerBoxSlider(layerBoxRect.height);
+		this.makeLayerBoxTexts(cedit);
+	},
+	makeLayerBoxSlider: function(height) {
+		let g = new PIXI.Graphics();
+		let inst = this;
+		let width = ONE_QUARTER_INCH;
+		let borderColor = 0x000000;
+		let bgColor = 0xd0d0d0;	
+		g.lineStyle(1,borderColor);
+		g.beginFill(bgColor);
+		g.drawRect(0,0, width,height);
+		g.endFill();
+		this.container.addChild(g);
+	},
+	makeLayerBoxTexts: function(cedit) {
+		let rows = LAYER_BOX_HEIGHT / LAYER_BOX_ROW_THICKNESS;
+		
+		let borderSize = 1;
+		for (let r = 0; r < rows; r++) {
+			if (r < cedit.layers.length) {
+				let text = this.makeLayerBoxText(cedit, r);
+				cedit.layers[r].text = text;
+				this.container.addChild(text);
+			}
+		}
+	},
+	makeLayerBoxText: function(cedit,layerIndex) {
+		let inst = this;
+
+		if (layerIndex >= cedit.layers.length ) {
+			console.log("Called makeLayerBoxText for layerIndex out of bounds: " + layerIndex );
+			return null;
+		}
+		let style = {
+			fontFamily: "Arial",
+			fontSize: "9px",
+			wordWrap: false,
+			stroke: "#000000"
+		};
+
+		let text = new PIXI.Text(cedit.layers[layerIndex].name, style);
+		text.layerIndex = layerIndex;
+
+		text.x = LAYER_BOX_WIDTH - LAYER_BOX_TEXT_WIDTH;
+		text.y = layerIndex * LAYER_BOX_ROW_THICKNESS + (LAYER_BOX_ROW_THICKNESS / 2);
+
+		text.anchor = new  PIXI.Point(0,0.5);
+		text.interactive = true;
+		text.hitArea = new PIXI.Rectangle(0,-0.5 * LAYER_BOX_ROW_THICKNESS,LAYER_BOX_TEXT_WIDTH, LAYER_BOX_ROW_THICKNESS);
+		text.on("mousedown", function(e) {
+			let thisText = text;
+			let li = thisText.layerIndex;	
+			let oldName = cedit.layers[li].name;
+			console.log(thisText._text);
+			console.log(thisText.layerIndex);
+			console.log(li);
+			console.log(cedit.layers[li].text._text);
+			console.log(cedit.layers[li].name);
+			let newName = window.prompt("Enter new layer name", oldName); 
+			e.stopPropagation();
+
+			if (newName == null) {
+				console.log("User canceled: not changing text");
+			} else if (newName == "") {
+				let answer = window.confirm("Are you sure you want to delete the layer named " + oldName + "?" );
+				if (answer == true) {
+					console.log("Deleting layer " + li);
+					cedit.layers[li].remove(inst.container);
+					cedit.layers.splice(li,1); // delete from array and reindex
+					for (let i = li; i < ( cedit.layers.length - 1); i++) {
+						if ( i * LAYER_BOX_ROW_THICKNESS < LAYER_BOX_HEIGHT ) {
+							if (cedit.layers[i] != null && cedit.layers[i].text != null ) {
+								cedit.layers[i].text.y -= LAYER_BOX_ROW_THICKNESS;
+								cedit.layers[i].text.layerIndex = i;
+							} else {
+								let text = inst.makeLayerBoxText(cedit,i);
+								cedit.layers[i].text = text;
+								inst.container.addChild(text);
+							}
+
+							if (cedit.layers[i].eyeSprite != null ) {
+								cedit.layers[i].eyeSprite.y -= LAYER_BOX_ROW_THICKNESS;
+							} else {
+								let eyeSprite = inst.makeEyeSprite(cedit,i);
+								cedit.layers[i].eyeSprite = eyeSprite;
+								inst.container.addChild(eyeSprite);
+							}
+
+							if (cedit.layers[i].upArrowSmallSprite != null ) {
+								cedit.layers[i].upArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+							} else {
+								let upArrowSmallSprite =  inst.makeUpArrowSmallSprite(cedit,i);
+								cedit.layers[i].upArrowSmallSprite = upArrowSmallSprite;
+								inst.container.addChild(upArrowSmallSprite);
+							}
+
+							if (cedit.layers[i].downArrowSmallSprite != null ) {
+								cedit.layers[i].downArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+							} else {
+								let downArrowSmallSprite =  inst.makeDownArrowSmallSprite(cedit,i);
+								cedit.layers[i].downArrowSmallSprite = downArrowSmallSprite;
+								inst.container.addChild(downArrowSmallSprite);
+							}
+						}
+					} 
+				}
+			} else {
+				cedit.layers[li].name = newName;	
+				text.text = cedit.layers[li].name;
+			}
+		});
+
+		return text;
+	},
+	makeEyeSprite: function(cedit, layerIndex) {
+		let textureName = CEdit.Icons.EYE;
+		if (!cedit.layers[layerIndex].visible ) {
+			textureName = CEdit.Icons.EYE_CLOSED;
+		}
+		let spr = new PIXI.Sprite( cedit.icons.getIconTexture(textureName) );
+		let toolx = 0;
+		let tooly = layerIndex;
+
+		spr.x = ONE_QUARTER_INCH + (EYE_ICON_WIDTH * toolx); // icon width * position
+		spr.y = (EYE_ICON_HEIGHT * tooly); // half an inch
+
+		spr.width = spr.width * (DPI / DPI_720p);
+		spr.height = spr.height * (DPI / DPI_720p);
+
+		spr.interactive = true;
+
+		let inst = this;
+		spr.on("mousedown", function () { 
+			console.log("CLICKED THE EYEBALL: " + layerIndex);
+			cedit.layers[layerIndex].visible = ! cedit.layers[layerIndex].visible;
+			let tname = CEdit.Icons.EYE_CLOSED;
+			if (cedit.layers[layerIndex].visible) {
+				tname = CEdit.Icons.EYE;
+			}
+			spr.texture = cedit.icons.getIconTexture(tname);
+		});
+	
+
+		return spr;
+	},
+	makeUpArrowSmallSprite: function(cedit, layerIndex) {
+		let textureName = CEdit.Icons.UP_ARROW_SMALL;
+		let spr = new PIXI.Sprite( cedit.icons.getIconTexture(textureName) );
+		let toolx = 1;
+		let tooly = layerIndex;
+
+		spr.x = ONE_QUARTER_INCH + (UP_ARROW_SMALL_ICON_WIDTH * toolx); // icon width * position
+		spr.y = (UP_ARROW_SMALL_ICON_HEIGHT * tooly); // half an inch
+
+		spr.width = spr.width * (DPI / DPI_720p);
+		spr.height = spr.height * (DPI / DPI_720p);
+
+		spr.interactive = true;
+
+		let inst = this;
+		spr.on("mousedown", function () { 
+			console.log("CLICKED THE UP_ARROW_SMALL: " + layerIndex);
+		});
+	
+
+		return spr;
+	},
+	makeDownArrowSmallSprite: function(cedit, layerIndex) {
+
+		let textureName = CEdit.Icons.DOWN_ARROW_SMALL;
+		let spr = new PIXI.Sprite(cedit.icons.getIconTexture(textureName));
+		let toolx = 2;
+		let tooly = layerIndex;
+
+		spr.x = ONE_QUARTER_INCH + (DOWN_ARROW_SMALL_ICON_WIDTH * toolx); // icon width * position
+		spr.y = (DOWN_ARROW_SMALL_ICON_HEIGHT * tooly); // half an inch
+
+		spr.width = spr.width * (DPI / DPI_720p);
+		spr.height = spr.height * (DPI / DPI_720p);
+
+		spr.interactive = true;
+
+		let inst = this;
+
+		spr.on("mousedown", function () { 
+			console.log("CLICKED THE DOWN_ARROW_SMALL: " + layerIndex);
+			if (layerIndex >= cedit.layers.length) { return; }
+
+			let temp = cedit.layers[layerIndex + 1];
+			cedit.layers[layerIndex + 1] = cedit.layers[layerIndex];
+			let newRowPos = (layerIndex + 1) * LAYER_BOX_ROW_THICKNESS + LAYER_BOX_ROW_THICKNESS;
+			let offTheEnd = false;
+			if (newRowPos > LAYER_BOX_HEIGHT ) {
+				offTheEnd = true;
+				console.log("Off the end: " + newRowPos + " > " + LAYER_BOX_HEIGHT );
+				if ( cedit.layers[layerIndex].text != null ) {
+					inst.container.removeChild(cedit.layers[layerIndex].text);
+					console.log("GOT HERE :" + layerIndex);
+					console.log(cedit.layers[layerIndex].text);
+					delete cedit.layers[layerIndex].text;
+				}
+				if ( cedit.layers[layerIndex].eyeSprite != null ) {
+					inst.container.removeChild(cedit.layers[layerIndex].eyeSprite);
+					cedit.layers[layerIndex].eyeSprite.destroy();
+					delete cedit.layers[layerIndex].eyeSprite;
+				}
+
+				if ( cedit.layers[layerIndex].upArrowSmallSprite != null ) {
+					inst.container.removeChild(cedit.layers[layerIndex].upArrowSmallSprite);
+					cedit.layers[layerIndex].upArrowSmallSprite.destroy();
+					delete cedit.layers[layerIndex].upArrowSmallSprite;
+				}
+			
+				if ( cedit.layers[layerIndex].downArrowSmallSprite != null ) {
+					inst.container.removeChild(cedit.layers[layerIndex].downArrowSmallSprite);
+					cedit.layers[layerIndex].downArrowSmallSprite.destroy();
+					delete cedit.layers[layerIndex].downArrowSmallSprite;
+				}
+			} else {
+				console.log("Not off the end: " + newRowPos + " <= " + LAYER_BOX_HEIGHT );
+				offTheEnd = false;
+				cedit.layers[layerIndex].text.layerIndex += 1;
+				cedit.layers[layerIndex].text.y += LAYER_BOX_ROW_THICKNESS;
+				cedit.layers[layerIndex].eyeSprite.y += LAYER_BOX_ROW_THICKNESS;
+				cedit.layers[layerIndex].downArrowSmallSprite.y += LAYER_BOX_ROW_THICKNESS;
+				cedit.layers[layerIndex].upArrowSmallSprite.y += LAYER_BOX_ROW_THICKNESS;
+			}	
+	
+			if (temp != undefined && temp != null) {
+				cedit.layers[layerIndex] = temp;
+				if ( temp.text != undefined && temp.text != null ) {
+					console.log("temp.text != null");
+					temp.text.layerIndex -= 1;	
+					temp.text.y -= LAYER_BOX_ROW_THICKNESS;
+					temp.eyeSprite.y -= LAYER_BOX_ROW_THICKNESS;
+					temp.downArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+					temp.upArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+				} else {
+					cedit.layers[layerIndex] = temp;
+					console.log("! temp.text != null");
+					let text = inst.makeLayerBoxText(cedit, layerIndex);
+					temp.text = text;
+					temp.text.layerIndex = layerIndex;
+					console.log("Text of text = " + temp.text._text);
+					console.log("Layer index of text = " + layerIndex);
+					inst.container.addChild(text);
+				
+					let eyeSprite =  inst.makeEyeSprite(cedit, layerIndex);
+					temp.eyeSprite = eyeSprite;
+					inst.container.addChild(eyeSprite);
+
+					let upArrowSmallSprite =  
+						inst.makeUpArrowSmallSprite(cedit, layerIndex);
+					temp.upArrowSmallSprite = upArrowSmallSprite;
+					inst.container.addChild(upArrowSmallSprite);
+
+					let downArrowSmallSprite =  
+						inst.makeDownArrowSmallSprite(cedit, layerIndex);
+					temp.downArrowSmallSprite = downArrowSmallSprite;
+					inst.container.addChild(downArrowSmallSprite);
+				}
+			} else {
+				console.log("Temp was undefined.  temp = cedit.layers[" + (layerIndex + 1) + "]");
+			}
+			console.log("Layer's text = " + cedit.layers[layerIndex].text._text);
+		});
+	
+
+		return spr;
+	},
+	addLayerBoxIcons: function(cedit) {
+		let methodName = ".addLayerBoxIcons(layerBoxContainer)";
+		console.log(">>> %s", methodName);
+
+		let y = 0;
+		for (let layerIndex = 0; layerIndex < cedit.layers.length; layerIndex++) {
+			if ( y < LAYER_BOX_HEIGHT ) {
+				let eye = this.makeEyeSprite(cedit, layerIndex);
+				this.container.addChild(eye);
+				cedit.layers[layerIndex].eyeSprite = eye;
+
+				let upArrowSmall = this.makeUpArrowSmallSprite(cedit, layerIndex);
+				this.container.addChild(upArrowSmall);
+				cedit.layers[layerIndex].upArrowSmallSprite = upArrowSmall;
+
+				let downArrowSmall = this.makeDownArrowSmallSprite(cedit, layerIndex);
+				this.container.addChild(downArrowSmall);
+				cedit.layers[layerIndex].downArrowSmallSprite = downArrowSmall;
+			}
+			y += LAYER_BOX_ROW_THICKNESS;
+		}
+
+		console.log("<<< %s", methodName);
+	}
+};
+
+
+
+// CEdit.Toolbox
+
+
+CEdit.Toolbox = function(parentContainer) {
+	this.className = "CEdit.Toolbox";
+	let methodName = this.className + "()";
+
+	console.log(">>> %s", methodName);
+
+	this.container = new PIXI.Container();
+	this.container.x = DRAWING_AREA_WIDTH + 2 * SCROLLBAR_THICKNESS;
+	this.container.y = 4 * ONE_INCH;
+	parentContainer.addChild(this.container);
+
+	console.log("<<< %s", methodName)
+};
+
+CEdit.Toolbox.PENCIL = "PENCIL";
+CEdit.Toolbox.ERASER = "ERASER";
+CEdit.Toolbox.HAND = "HAND";
+
+CEdit.Toolbox.prototype = {
+	constructor: CEdit.Toolbox,
+	deselect: function() {
+		let methodName = this.className + ".deselect()";
+		console.log(">>> %s", methodName);
+		if (this.selectedToolSprite != null) {
+			this.selectedToolSprite.tint = 0xFFFFFF;
+		}
+		this.selectedTool = null;
+		console.log("<<< %s", methodName);
+	},
+	makeHandSprite: function(cedit) {
+    let methodName = this.className + ".makeHandSprite()";
+		console.log(">>> %s", methodName);
+
+		let texture = cedit.icons.getIconTexture(CEdit.Icons.HAND);
+		let spr = new PIXI.Sprite(texture);
+		let toolx = 0;
+		let tooly = 1;
+
+		spr.x = (ONE_HALF_INCH * toolx); // icon width * position
+		spr.y = (ONE_HALF_INCH * tooly); // half an inch
+
+		spr.width = spr.width * (DPI / DPI_720p);
+		spr.height = spr.height * (DPI / DPI_720p);
+
+		spr.interactive = true;
+
+		let inst = this;
+		spr.on("mousedown", function () { 
+			inst.deselect();
+			inst.selectedTool = CEdit.Toolbox.HAND;
+			inst.selectedToolSprite = spr;
+			spr.tint = 0x909090;
+			console.log("Selected " + cedit.tool);
+		});
+
+		console.log("<<< %s", methodName);
+		return spr;
+	},
+	makePencilSprite: function(cedit) {
+    let methodName = this.className + ".makePencilSprite()";
+		console.log(">>> %s", methodName);
+
+		let texture = cedit.icons.getIconTexture(CEdit.Icons.PENCIL);
+		let spr = new PIXI.Sprite(texture);
+		let toolx = 1;
+		let tooly = 1;
+
+		spr.x = (ONE_HALF_INCH * toolx); // icon width * position
+		spr.y = (ONE_HALF_INCH * tooly); // half an inch
+
+		spr.width = spr.width * (DPI / DPI_720p);
+		spr.height = spr.height * (DPI / DPI_720p);
+
+		spr.interactive = true;
+
+		let inst = this;
+		spr.on("mousedown", function () { 
+			inst.deselect();
+			inst.selectedTool = CEdit.Toolbox.PENCIL;
+			inst.selectedToolSprite = spr;
+			spr.tint = 0x909090;
+			console.log("Selected " + inst.tool);
+		});
+
+
+		console.log("<<< %s", methodName);
+		return spr;
+	},
+	makeEraserSprite: function(cedit) {
+    let methodName = this.className + ".makePencilSprite()";
+		console.log(">>> %s", methodName);
+		let texture = cedit.icons.getIconTexture(CEdit.Icons.ERASER);
+		let spr = new PIXI.Sprite(texture);
+		let toolx = 2;
+		let tooly = 1;
+
+		spr.x = (ONE_HALF_INCH * toolx); // icon width * position
+		spr.y = (ONE_HALF_INCH * tooly); // half an inch
+
+		spr.width = spr.width * (DPI / DPI_720p);
+		spr.height = spr.height * (DPI / DPI_720p);
+
+		spr.interactive = true;
+
+		let inst = this;
+		spr.on("mousedown", function () { 
+			inst.deselect();
+			inst.selectedTool = CEdit.Toolbox.ERASER;
+			inst.selectedToolSprite = spr;
+			spr.tint = 0x909090;
+			console.log("Selected " + inst.tool);
+		});
+
+		console.log("<<< %s", methodName);
+		return spr;
+	},
+	addToolboxIcons: function(cedit) {
+		let methodName = this.className + ".addToolboxIcons(cedit)";
+		console.log(">>> %s", methodName);
+
+		let hand = this.makeHandSprite(cedit);
+		this.container.addChild(hand);
+
+		let pencil = this.makePencilSprite(cedit);
+		this.container.addChild(pencil);
+
+		let eraser = this.makeEraserSprite(cedit);
+		this.container.addChild(eraser);
+		console.log("<<< %s", methodName);
+	}
+};
+
 // CEdit.Icons 
 CEdit.Icons = function() {
 	let methodName = "CEdit.Icons()";
 	console.log(">>> %s", methodName);
-	this.classname = "CEdit.Icons";
+	this.className = "CEdit.Icons";
 	console.log("<<< %s", methodName);
 };
 
@@ -516,287 +842,7 @@ CEdit.Icons.prototype = {
 			});
 
 	},
-	deselect: function() {
-		let methodName = "CEdit.Icons.deselect()";
-		console.log(">>> %s", methodName);
-		if (this.selectedPaintTool != null) {
-			this.selectedPaintTool.tint = 0xFFFFFF;
-		}
-		console.log("<<< %s", methodName);
+	getIconTexture: function(iconName) {
+		return PIXI.loader.resources[iconName].texture;
 	},
-	makeHandSprite: function(cedit) {
-		let spr = new PIXI.Sprite(
-			PIXI.loader.resources[CEdit.Icons.HAND].texture);
-		let toolx = 0;
-		let tooly = 1;
-
-		spr.x = (ONE_HALF_INCH * toolx); // icon width * position
-		spr.y = (ONE_HALF_INCH * tooly); // half an inch
-
-		spr.width = spr.width * (DPI / DPI_720p);
-		spr.height = spr.height * (DPI / DPI_720p);
-
-		spr.interactive = true;
-
-		let inst = this;
-		spr.on("mousedown", function () { 
-			cedit.tool = HAND_PAINT_TOOL;
-			inst.deselect();
-			inst.selectedPaintTool = spr;
-			spr.tint = 0x909090;
-			console.log("Selected " + cedit.tool);
-		});
-
-		return spr;
-	},
-	makePencilSprite: function(cedit) {
-    let methodName = "CEdit.Icons.makePencilSprite()";
-		console.log(">>> %s", methodName);
-		
-		let spr = new PIXI.Sprite(
-			PIXI.loader.resources[CEdit.Icons.PENCIL].texture);
-		let toolx = 1;
-		let tooly = 1;
-
-		spr.x = (ONE_HALF_INCH * toolx); // icon width * position
-		spr.y = (ONE_HALF_INCH * tooly); // half an inch
-
-		spr.width = spr.width * (DPI / DPI_720p);
-		spr.height = spr.height * (DPI / DPI_720p);
-
-		spr.interactive = true;
-
-		let inst = this;
-		spr.on("mousedown", function () { 
-			cedit.tool = PENCIL_PAINT_TOOL;
-			inst.deselect();
-			inst.selectedPaintTool = spr;
-			spr.tint = 0x909090;
-			console.log("Selected " + cedit.tool);
-		});
-
-
-		console.log("<<< %s", methodName);
-		return spr;
-	},
-	makeEraserSprite: function(cedit) {
-		let spr = new PIXI.Sprite(
-			PIXI.loader.resources[CEdit.Icons.ERASER].texture);
-		let toolx = 2;
-		let tooly = 1;
-
-		spr.x = (ONE_HALF_INCH * toolx); // icon width * position
-		spr.y = (ONE_HALF_INCH * tooly); // half an inch
-
-		spr.width = spr.width * (DPI / DPI_720p);
-		spr.height = spr.height * (DPI / DPI_720p);
-
-		spr.interactive = true;
-
-		let inst = this;
-		spr.on("mousedown", function () { 
-			cedit.tool = ERASER_PAINT_TOOL;
-			inst.deselect();
-			inst.selectedPaintTool = spr;
-			spr.tint = 0x909090;
-			console.log("Selected " + cedit.tool);
-		});
-
-		return spr;
-	},
-	addPaintToolboxIcons: function(toolboxContainer, cedit) {
-		let methodName = "CEdit.Icons.addPaintToolboxIcons(toolboxContainer)";
-		console.log(">>> %s", methodName);
-
-		let hand = this.makeHandSprite(cedit);
-		toolboxContainer.addChild(hand);
-
-		let pencil = this.makePencilSprite(cedit);
-		toolboxContainer.addChild(pencil);
-
-		let eraser = this.makeEraserSprite(cedit);
-		toolboxContainer.addChild(eraser);
-
-
-		console.log("<<< %s", methodName);
-	},
-	makeEyeSprite: function(cedit, layerIndex) {
-
-		let textureName = CEdit.Icons.EYE;
-		if ( ! cedit.layers[layerIndex].visible ) {
-			textureName = CEdit.Icons.EYE_CLOSED;
-		}
-		let spr = new PIXI.Sprite(
-			PIXI.loader.resources[textureName].texture);
-		let toolx = 0;
-		let tooly = layerIndex;
-
-		spr.x = ONE_QUARTER_INCH + (EYE_ICON_WIDTH * toolx); // icon width * position
-		spr.y = (EYE_ICON_HEIGHT * tooly); // half an inch
-
-		spr.width = spr.width * (DPI / DPI_720p);
-		spr.height = spr.height * (DPI / DPI_720p);
-
-		spr.interactive = true;
-
-		let inst = this;
-		spr.on("mousedown", function () { 
-			console.log("CLICKED THE EYEBALL: " + layerIndex);
-			cedit.layers[layerIndex].visible = ! cedit.layers[layerIndex].visible;
-			let tname = CEdit.Icons.EYE_CLOSED;
-			if (cedit.layers[layerIndex].visible) {
-				tname = CEdit.Icons.EYE;
-			}
-			spr.texture = PIXI.loader.resources[tname].texture;
-		});
-	
-
-		return spr;
-	},
-	makeUpArrowSmallSprite: function(cedit, layerIndex) {
-
-		let textureName = CEdit.Icons.UP_ARROW_SMALL;
-		let spr = new PIXI.Sprite(
-			PIXI.loader.resources[textureName].texture);
-		let toolx = 1;
-		let tooly = layerIndex;
-
-		spr.x = ONE_QUARTER_INCH + (UP_ARROW_SMALL_ICON_WIDTH * toolx); // icon width * position
-		spr.y = (UP_ARROW_SMALL_ICON_HEIGHT * tooly); // half an inch
-
-		spr.width = spr.width * (DPI / DPI_720p);
-		spr.height = spr.height * (DPI / DPI_720p);
-
-		spr.interactive = true;
-
-		let inst = this;
-		spr.on("mousedown", function () { 
-			console.log("CLICKED THE UP_ARROW_SMALL: " + layerIndex);
-		});
-	
-
-		return spr;
-	},
-	makeDownArrowSmallSprite: function(cedit, layerIndex) {
-
-		let textureName = CEdit.Icons.DOWN_ARROW_SMALL;
-		let spr = new PIXI.Sprite(
-			PIXI.loader.resources[textureName].texture);
-		let toolx = 2;
-		let tooly = layerIndex;
-
-		spr.x = ONE_QUARTER_INCH + (DOWN_ARROW_SMALL_ICON_WIDTH * toolx); // icon width * position
-		spr.y = (DOWN_ARROW_SMALL_ICON_HEIGHT * tooly); // half an inch
-
-		spr.width = spr.width * (DPI / DPI_720p);
-		spr.height = spr.height * (DPI / DPI_720p);
-
-		spr.interactive = true;
-
-		let inst = this;
-		spr.on("mousedown", function () { 
-			console.log("CLICKED THE DOWN_ARROW_SMALL: " + layerIndex);
-			if (layerIndex >= cedit.layers.length) { return; }
-
-			let temp = cedit.layers[layerIndex + 1];
-			cedit.layers[layerIndex + 1] = cedit.layers[layerIndex];
-			let newRowPos = (layerIndex + 1) * LAYER_BOX_ROW_THICKNESS + LAYER_BOX_ROW_THICKNESS;
-			let offTheEnd = false;
-			if (newRowPos > LAYER_BOX_HEIGHT ) {
-				offTheEnd = true;
-				console.log("Off the end: " + newRowPos + " > " + LAYER_BOX_HEIGHT );
-				if ( cedit.layers[layerIndex].text != null ) {
-					cedit.layers[layerIndex].text.visible = false;
-					cedit.layerBoxContainer.removeChild(cedit.layers[layerIndex].text);
-					console.log("GOT HERE :" + layerIndex);
-					console.log(cedit.layers[layerIndex].text);
-					delete cedit.layers[layerIndex].text;
-				}
-				if ( cedit.layers[layerIndex].eyeSprite != null ) {
-					cedit.layerBoxContainer.removeChild(cedit.layers[layerIndex].eyeSprite);
-					cedit.layers[layerIndex].eyeSprite.destroy();
-					delete cedit.layers[layerIndex].eyeSprite;
-				}
-
-				if ( cedit.layers[layerIndex].upArrowSmallSprite != null ) {
-					cedit.layers[layerIndex].upArrowSmallSprite.destroy();
-					delete cedit.layers[layerIndex].upArrowSmallSprite;
-				}
-			
-				if ( cedit.layers[layerIndex].downArrowSmallSprite != null ) {
-					cedit.layers[layerIndex].downArrowSmallSprite.destroy();
-					delete cedit.layers[layerIndex].downArrowSmallSprite;
-				}
-			} else {
-				console.log("Not off the end: " + newRowPos + " <= " + LAYER_BOX_HEIGHT );
-				offTheEnd = false;
-				cedit.layers[layerIndex].text.layerIndex += 1;
-				cedit.layers[layerIndex].text.y += LAYER_BOX_ROW_THICKNESS;
-				cedit.layers[layerIndex].eyeSprite.y += LAYER_BOX_ROW_THICKNESS;
-				cedit.layers[layerIndex].downArrowSmallSprite += LAYER_BOX_ROW_THICKNESS;
-				cedit.layers[layerIndex].upArrowSmallSprite += LAYER_BOX_ROW_THICKNESS;
-			}	
-
-			cedit.layers[layerIndex] = temp;
-			if ( temp.text != undefined && temp.text != null ) {
-				console.log("temp.text != null");
-				temp.text.layerIndex -= 1;	
-				temp.text.y -= LAYER_BOX_ROW_THICKNESS;
-				temp.eyeSprite.y -= LAYER_BOX_ROW_THICKNESS;
-				temp.downArrowSmallSprite -= LAYER_BOX_ROW_THICKNESS;
-				temp.upArrowSmallSprite -= LAYER_BOX_ROW_THICKNESS;
-			} else {
-				cedit.layers[layerIndex] = temp;
-				console.log("! temp.text != null");
-				let text = cedit.makeLayerBoxText(cedit.layerBoxContainer, layerIndex);
-				temp.text = text;
-				temp.text.layerIndex = layerIndex;
-				console.log("Text of text = " + temp.text._text);
-				console.log("Layer index of text = " + layerIndex);
-				cedit.layerBoxContainer.addChild(text);
-				
-        let eyeSprite =  cedit.icons.makeEyeSprite(cedit, layerIndex);
-				temp.eyeSprite = eyeSprite;
-				cedit.layerBoxContainer.addChild(eyeSprite);
-
-        let upArrowSmallSprite =  cedit.icons.makeUpArrowSmallSprite(cedit, layerIndex);
-				temp.upArrowSmallSprite = upArrowSmallSprite;
-				cedit.layerBoxContainer.addChild(upArrowSmallSprite);
-
-        let downArrowSmallSprite =  cedit.icons.makeDownArrowSmallSprite(cedit, layerIndex);
-				temp.downArrowSmallSprite = downArrowSmallSprite;
-				cedit.layerBoxContainer.addChild(downArrowSmallSprite);
-
-			}
-			console.log("Layer's text = " + cedit.layers[layerIndex].text._text);
-	
-		});
-	
-
-		return spr;
-	},
-	addLayerBoxIcons: function(layerBoxContainer, cedit) {
-		let methodName = "CEdit.Icons.addLayerBoxIcons(layerBoxContainer)";
-		console.log(">>> %s", methodName);
-
-		let y = 0;
-		for (let layerIndex = 0; layerIndex < cedit.layers.length; layerIndex++) {
-			if ( y < LAYER_BOX_HEIGHT ) {
-				let eye = this.makeEyeSprite(cedit, layerIndex);
-				layerBoxContainer.addChild(eye);
-				cedit.layers[layerIndex].eyeSprite = eye;
-
-				let upArrowSmall = this.makeUpArrowSmallSprite(cedit, layerIndex);
-				layerBoxContainer.addChild(upArrowSmall);
-				cedit.layers[layerIndex].upArrowSmallSprite = upArrowSmall;
-
-				let downArrowSmall = this.makeDownArrowSmallSprite(cedit, layerIndex);
-				layerBoxContainer.addChild(downArrowSmall);
-				cedit.layers[layerIndex].downArrowSmallSprite = downArrowSmall;
-			}
-			y += LAYER_BOX_ROW_THICKNESS;
-		}
-
-		console.log("<<< %s", methodName);
-	}
 };
