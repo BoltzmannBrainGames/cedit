@@ -51,11 +51,16 @@ const LAYER_BOX_ROW_THICKNESS = ONE_SIXTH_INCH;
 
 const EYE_ICON_WIDTH = LAYER_BOX_ROW_THICKNESS;
 const EYE_ICON_HEIGHT = EYE_ICON_WIDTH;
+const	UP_ARROW_SMALL_ICON_WIDTH = LAYER_BOX_ROW_THICKNESS;
+const	UP_ARROW_SMALL_ICON_HEIGHT = UP_ARROW_SMALL_ICON_WIDTH;
+const	DOWN_ARROW_SMALL_ICON_WIDTH = LAYER_BOX_ROW_THICKNESS;
+const	DOWN_ARROW_SMALL_ICON_HEIGHT = DOWN_ARROW_SMALL_ICON_WIDTH;
+
 
 const LAYER_BOX_WIDTH = ONE_INCH + ONE_HALF_INCH;
 const LAYER_BOX_HEIGHT = 3 * ONE_INCH;
 
-const LAYER_BOX_TEXT_WIDTH = LAYER_BOX_WIDTH - SCROLLBAR_THICKNESS - EYE_ICON_WIDTH;
+const LAYER_BOX_TEXT_WIDTH = LAYER_BOX_WIDTH - SCROLLBAR_THICKNESS - EYE_ICON_WIDTH - UP_ARROW_SMALL_ICON_WIDTH - DOWN_ARROW_SMALL_ICON_WIDTH;
 
 
 function CEdit() {
@@ -347,6 +352,11 @@ CEdit.prototype = {
 			let thisText = text;
 			let li = thisText.layerIndex;	
 			let oldName = inst.layers[li].name;
+			console.log(thisText._text);
+			console.log(thisText.layerIndex);
+			console.log(li);
+			console.log(inst.layers[li].text._text);
+			console.log(inst.layers[li].name);
 			let newName = window.prompt("Enter new layer name", oldName); 
 			e.stopPropagation();
 
@@ -368,12 +378,29 @@ CEdit.prototype = {
 								inst.layers[i].text = text;
 								container.addChild(text);
 							}
+
 							if (inst.layers[i].eyeSprite != null ) {
 								inst.layers[i].eyeSprite.y -= LAYER_BOX_ROW_THICKNESS;
 							} else {
 								let eyeSprite =  inst.icons.makeEyeSprite(inst, i);
 								inst.layers[i].eyeSprite = eyeSprite;
 								container.addChild(eyeSprite);
+							}
+
+							if (inst.layers[i].upArrowSmallSprite != null ) {
+								inst.layers[i].upArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+							} else {
+								let upArrowSmallSprite =  inst.icons.makeUpArrowSmallSprite(inst, i);
+								inst.layers[i].upArrowSmallSprite = upArrowSmallSprite;
+								container.addChild(upArrowSmallSprite);
+							}
+
+							if (inst.layers[i].downArrowSmallSprite != null ) {
+								inst.layers[i].downArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+							} else {
+								let downArrowSmallSprite =  inst.icons.makeDownArrowSmallSprite(inst, i);
+								inst.layers[i].downArrowSmallSprite = downArrowSmallSprite;
+								container.addChild(downArrowSmallSprite);
 							}
 						}
 					} 
@@ -458,6 +485,10 @@ CEdit.Icons.EYE = "CEdit.Icons.EYE";
 CEdit.Icons.EYE_URI = CEdit.Icons.DIRECTORY + "/icon-eye.png";
 CEdit.Icons.EYE_CLOSED = "CEdit.Icons.EYE_CLOSED";
 CEdit.Icons.EYE_CLOSED_URI = CEdit.Icons.DIRECTORY + "/icon-eye-closed.png";
+CEdit.Icons.UP_ARROW_SMALL = "CEdit.Icons.UP_ARROW_SMALL";
+CEdit.Icons.UP_ARROW_SMALL_URI = CEdit.Icons.DIRECTORY + "/up-arrow-small.png";
+CEdit.Icons.DOWN_ARROW_SMALL = "CEdit.Icons.DOWN_ARROW_SMALL";
+CEdit.Icons.DOWN_ARROW_SMALL_URI = CEdit.Icons.DIRECTORY + "/down-arrow-small.png";
 
 
 CEdit.Icons.prototype = {
@@ -474,6 +505,8 @@ CEdit.Icons.prototype = {
 				add(CEdit.Icons.ERASER, CEdit.Icons.ERASER_URI).
 				add(CEdit.Icons.EYE, CEdit.Icons.EYE_URI).
 				add(CEdit.Icons.EYE_CLOSED, CEdit.Icons.EYE_CLOSED_URI).
+				add(CEdit.Icons.UP_ARROW_SMALL, CEdit.Icons.UP_ARROW_SMALL_URI).
+				add(CEdit.Icons.DOWN_ARROW_SMALL, CEdit.Icons.DOWN_ARROW_SMALL_URI).
 				on("progress", CEdit.Icons.loadProgressHandler).
 				load(function() {
 					console.log("We are done loading");
@@ -620,18 +653,148 @@ CEdit.Icons.prototype = {
 
 		return spr;
 	},
+	makeUpArrowSmallSprite: function(cedit, layerIndex) {
+
+		let textureName = CEdit.Icons.UP_ARROW_SMALL;
+		let spr = new PIXI.Sprite(
+			PIXI.loader.resources[textureName].texture);
+		let toolx = 1;
+		let tooly = layerIndex;
+
+		spr.x = ONE_QUARTER_INCH + (UP_ARROW_SMALL_ICON_WIDTH * toolx); // icon width * position
+		spr.y = (UP_ARROW_SMALL_ICON_HEIGHT * tooly); // half an inch
+
+		spr.width = spr.width * (DPI / DPI_720p);
+		spr.height = spr.height * (DPI / DPI_720p);
+
+		spr.interactive = true;
+
+		let inst = this;
+		spr.on("mousedown", function () { 
+			console.log("CLICKED THE UP_ARROW_SMALL: " + layerIndex);
+		});
+	
+
+		return spr;
+	},
+	makeDownArrowSmallSprite: function(cedit, layerIndex) {
+
+		let textureName = CEdit.Icons.DOWN_ARROW_SMALL;
+		let spr = new PIXI.Sprite(
+			PIXI.loader.resources[textureName].texture);
+		let toolx = 2;
+		let tooly = layerIndex;
+
+		spr.x = ONE_QUARTER_INCH + (DOWN_ARROW_SMALL_ICON_WIDTH * toolx); // icon width * position
+		spr.y = (DOWN_ARROW_SMALL_ICON_HEIGHT * tooly); // half an inch
+
+		spr.width = spr.width * (DPI / DPI_720p);
+		spr.height = spr.height * (DPI / DPI_720p);
+
+		spr.interactive = true;
+
+		let inst = this;
+		spr.on("mousedown", function () { 
+			console.log("CLICKED THE DOWN_ARROW_SMALL: " + layerIndex);
+			if (layerIndex >= cedit.layers.length) { return; }
+
+			let temp = cedit.layers[layerIndex + 1];
+			cedit.layers[layerIndex + 1] = cedit.layers[layerIndex];
+			let newRowPos = (layerIndex + 1) * LAYER_BOX_ROW_THICKNESS + LAYER_BOX_ROW_THICKNESS;
+			let offTheEnd = false;
+			if (newRowPos > LAYER_BOX_HEIGHT ) {
+				offTheEnd = true;
+				console.log("Off the end: " + newRowPos + " > " + LAYER_BOX_HEIGHT );
+				if ( cedit.layers[layerIndex].text != null ) {
+					cedit.layers[layerIndex].text.visible = false;
+					cedit.layerBoxContainer.removeChild(cedit.layers[layerIndex].text);
+					console.log("GOT HERE :" + layerIndex);
+					console.log(cedit.layers[layerIndex].text);
+					delete cedit.layers[layerIndex].text;
+				}
+				if ( cedit.layers[layerIndex].eyeSprite != null ) {
+					cedit.layerBoxContainer.removeChild(cedit.layers[layerIndex].eyeSprite);
+					cedit.layers[layerIndex].eyeSprite.destroy();
+					delete cedit.layers[layerIndex].eyeSprite;
+				}
+
+				if ( cedit.layers[layerIndex].upArrowSmallSprite != null ) {
+					cedit.layers[layerIndex].upArrowSmallSprite.destroy();
+					delete cedit.layers[layerIndex].upArrowSmallSprite;
+				}
+			
+				if ( cedit.layers[layerIndex].downArrowSmallSprite != null ) {
+					cedit.layers[layerIndex].downArrowSmallSprite.destroy();
+					delete cedit.layers[layerIndex].downArrowSmallSprite;
+				}
+			} else {
+				console.log("Not off the end: " + newRowPos + " <= " + LAYER_BOX_HEIGHT );
+				offTheEnd = false;
+				cedit.layers[layerIndex].text.layerIndex += 1;
+				cedit.layers[layerIndex].text.y += LAYER_BOX_ROW_THICKNESS;
+				cedit.layers[layerIndex].eyeSprite.y += LAYER_BOX_ROW_THICKNESS;
+				cedit.layers[layerIndex].downArrowSmallSprite += LAYER_BOX_ROW_THICKNESS;
+				cedit.layers[layerIndex].upArrowSmallSprite += LAYER_BOX_ROW_THICKNESS;
+			}	
+
+			cedit.layers[layerIndex] = temp;
+			if ( temp.text != undefined && temp.text != null ) {
+				console.log("temp.text != null");
+				temp.text.layerIndex -= 1;	
+				temp.text.y -= LAYER_BOX_ROW_THICKNESS;
+				temp.eyeSprite.y -= LAYER_BOX_ROW_THICKNESS;
+				temp.downArrowSmallSprite -= LAYER_BOX_ROW_THICKNESS;
+				temp.upArrowSmallSprite -= LAYER_BOX_ROW_THICKNESS;
+			} else {
+				cedit.layers[layerIndex] = temp;
+				console.log("! temp.text != null");
+				let text = cedit.makeLayerBoxText(cedit.layerBoxContainer, layerIndex);
+				temp.text = text;
+				temp.text.layerIndex = layerIndex;
+				console.log("Text of text = " + temp.text._text);
+				console.log("Layer index of text = " + layerIndex);
+				cedit.layerBoxContainer.addChild(text);
+				
+        let eyeSprite =  cedit.icons.makeEyeSprite(cedit, layerIndex);
+				temp.eyeSprite = eyeSprite;
+				cedit.layerBoxContainer.addChild(eyeSprite);
+
+        let upArrowSmallSprite =  cedit.icons.makeUpArrowSmallSprite(cedit, layerIndex);
+				temp.upArrowSmallSprite = upArrowSmallSprite;
+				cedit.layerBoxContainer.addChild(upArrowSmallSprite);
+
+        let downArrowSmallSprite =  cedit.icons.makeDownArrowSmallSprite(cedit, layerIndex);
+				temp.downArrowSmallSprite = downArrowSmallSprite;
+				cedit.layerBoxContainer.addChild(downArrowSmallSprite);
+
+			}
+			console.log("Layer's text = " + cedit.layers[layerIndex].text._text);
+	
+		});
+	
+
+		return spr;
+	},
 	addLayerBoxIcons: function(layerBoxContainer, cedit) {
 		let methodName = "CEdit.Icons.addLayerBoxIcons(layerBoxContainer)";
 		console.log(">>> %s", methodName);
 
-		let eyeY = 0;
+		let y = 0;
 		for (let layerIndex = 0; layerIndex < cedit.layers.length; layerIndex++) {
-			if ( eyeY < LAYER_BOX_HEIGHT ) {
+			if ( y < LAYER_BOX_HEIGHT ) {
 				let eye = this.makeEyeSprite(cedit, layerIndex);
 				layerBoxContainer.addChild(eye);
 				cedit.layers[layerIndex].eyeSprite = eye;
+
+				let upArrowSmall = this.makeUpArrowSmallSprite(cedit, layerIndex);
+				layerBoxContainer.addChild(upArrowSmall);
+				cedit.layers[layerIndex].upArrowSmallSprite = upArrowSmall;
+
+				let downArrowSmall = this.makeDownArrowSmallSprite(cedit, layerIndex);
+				layerBoxContainer.addChild(downArrowSmall);
+				cedit.layers[layerIndex].downArrowSmallSprite = downArrowSmall;
 			}
-			eyeY += EYE_ICON_HEIGHT;
+			y += LAYER_BOX_ROW_THICKNESS;
 		}
 
 		console.log("<<< %s", methodName);
