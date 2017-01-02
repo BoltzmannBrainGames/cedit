@@ -297,12 +297,24 @@ CEdit.Layer = function(name,visible) {
 CEdit.Layer.prototype = {
 	constructor: CEdit.Layer,
 	remove: function(container) {
-		if (this.eyeSprite != null ) {
-			container.removeChild(this.eyeSprite);
-		}
+		let methodName = this.className + ".remove(container)";
+		console.log(">>> %s", methodName);
 
 		if ( this.text != null ) {
 			container.removeChild(this.text);
+			this.text.destroy();
+		}
+		if (this.eyeSprite != null ) {
+			container.removeChild(this.eyeSprite);
+			this.eyeSprite.destroy();
+		}
+		if (this.upArrowSmallSprite != null ) {
+			container.removeChild(this.upArrowSmallSprite);
+			this.upArrowSmallSprite.destroy();
+		}
+		if (this.downArrowSmallSprite != null ) {
+			container.removeChild(this.downArrowSmallSprite);
+			this.downArrowSmallSprite.destroy();
 		}
 	}
 };
@@ -316,8 +328,6 @@ CEdit.Layerbox = function(cedit, parentContainer) {
 	console.log(">>> %s", methodName);
 
 	this.container = new PIXI.Container();
-	this.container._cedit = {}; // mix in our vars that need to be accessable
-															// given container here - lame.
 	this.container.x = DRAWING_AREA_WIDTH + SCROLLBAR_THICKNESS;
 	this.container.y = 0;
 	let layerBoxRect = new PIXI.Rectangle(
@@ -396,7 +406,8 @@ CEdit.Layerbox.prototype = {
 		};
 
 		let text = new PIXI.Text(cedit.layers[layerIndex].name, style);
-		text.layerIndex = layerIndex;
+		text._extraFields = {};
+		text._extraFields.layerIndex = layerIndex;
 
 		text.x = LAYER_BOX_WIDTH - LAYER_BOX_TEXT_WIDTH;
 		text.y = layerIndex * LAYER_BOX_ROW_THICKNESS + (LAYER_BOX_ROW_THICKNESS / 2);
@@ -406,10 +417,10 @@ CEdit.Layerbox.prototype = {
 		text.hitArea = new PIXI.Rectangle(0,-0.5 * LAYER_BOX_ROW_THICKNESS,LAYER_BOX_TEXT_WIDTH, LAYER_BOX_ROW_THICKNESS);
 		text.on("mousedown", function(e) {
 			let thisText = text;
-			let li = thisText.layerIndex;	
+			let li = thisText._extraFields.layerIndex;	
+			console.log("li = " + li);
 			let oldName = cedit.layers[li].name;
 			console.log(thisText._text);
-			console.log(thisText.layerIndex);
 			console.log(li);
 			console.log(cedit.layers[li].text._text);
 			console.log(cedit.layers[li].name);
@@ -424,35 +435,45 @@ CEdit.Layerbox.prototype = {
 					console.log("Deleting layer " + li);
 					cedit.layers[li].remove(inst.container);
 					cedit.layers.splice(li,1); // delete from array and reindex
-					for (let i = li; i < ( cedit.layers.length - 1); i++) {
+					for (let i = li; i < cedit.layers.length; i++) {
 						if ( i * LAYER_BOX_ROW_THICKNESS < LAYER_BOX_HEIGHT ) {
-							if (cedit.layers[i] != null && cedit.layers[i].text != null ) {
-								cedit.layers[i].text.y -= LAYER_BOX_ROW_THICKNESS;
-								cedit.layers[i].text.layerIndex = i;
-							} else {
-								let text = inst.makeLayerBoxText(cedit,i);
-								cedit.layers[i].text = text;
-								inst.container.addChild(text);
-							}
+							console.log("My index is: " + i);
+							if (cedit.layers[i] != null ) {
+								console.log("cedit.layers[" + i + "] was not null");
+								console.log("cedit.layers[" + i + "].name = " + cedit.layers[i].name);
+								if (cedit.layers[i].text != null ) {
+									console.log("cedit.layers[" + i + "].text._text = " + cedit.layers[i].text._text);
+									cedit.layers[i].text.y -= LAYER_BOX_ROW_THICKNESS;
+									cedit.layers[i].text._extraFields.layerIndex = i;
+								} else {
+									let text = inst.makeLayerBoxText(cedit,i);
+									cedit.layers[i].text = text;
+									console.log("Newly created cedit.layers[" + i + "].text._text = " + cedit.layers[i].text._text);
+									inst.container.addChild(text);
+								}
 
-							if (cedit.layers[i].eyeSprite != null ) {
-								cedit.layers[i].eyeSprite.y -= LAYER_BOX_ROW_THICKNESS;
-							} else {
-								let eyeSprite = inst.makeEyeSprite(cedit,i);
-								cedit.layers[i].eyeSprite = eyeSprite;
-								inst.container.addChild(eyeSprite);
-							}
+								if (cedit.layers[i].eyeSprite != null ) {
+									cedit.layers[i].eyeSprite.y -= LAYER_BOX_ROW_THICKNESS;
+								} else {
+									let eyeSprite = inst.makeEyeSprite(cedit,i);
+									cedit.layers[i].eyeSprite = eyeSprite;
+									inst.container.addChild(eyeSprite);
+								}
 
-							if (cedit.layers[i].upArrowSmallSprite != null ) {
-								cedit.layers[i].upArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+								if (cedit.layers[i].upArrowSmallSprite != null ) {
+									cedit.layers[i].upArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+								} else {
+									let upArrowSmallSprite =  inst.makeUpArrowSmallSprite(cedit,i);
+									cedit.layers[i].upArrowSmallSprite = upArrowSmallSprite;
+									inst.container.addChild(upArrowSmallSprite);
+								}
 							} else {
-								let upArrowSmallSprite =  inst.makeUpArrowSmallSprite(cedit,i);
-								cedit.layers[i].upArrowSmallSprite = upArrowSmallSprite;
-								inst.container.addChild(upArrowSmallSprite);
+								console.log("cedit.layers[" + i + "] was null");
 							}
 
 							if (cedit.layers[i].downArrowSmallSprite != null ) {
 								cedit.layers[i].downArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+								cedit.layers[i].downArrowSmallSprite._extraFields.layerIndex = i;
 							} else {
 								let downArrowSmallSprite =  inst.makeDownArrowSmallSprite(cedit,i);
 								cedit.layers[i].downArrowSmallSprite = downArrowSmallSprite;
@@ -486,12 +507,16 @@ CEdit.Layerbox.prototype = {
 
 		spr.interactive = true;
 
+		spr._extraFields = {};
+		spr._extraFields.layerIndex = layerIndex;
+
 		let inst = this;
 		spr.on("mousedown", function () { 
-			console.log("CLICKED THE EYEBALL: " + layerIndex);
-			cedit.layers[layerIndex].visible = ! cedit.layers[layerIndex].visible;
+			let li = spr._extraFields.layerIndex;
+			console.log("CLICKED THE eyeSprite: " + cedit.layers[li].name + " idx: " + li);
+			cedit.layers[li].visible = ! cedit.layers[li].visible;
 			let tname = CEdit.Icons.EYE_CLOSED;
-			if (cedit.layers[layerIndex].visible) {
+			if (cedit.layers[li].visible) {
 				tname = CEdit.Icons.EYE;
 			}
 			spr.texture = cedit.icons.getIconTexture(tname);
@@ -514,12 +539,113 @@ CEdit.Layerbox.prototype = {
 
 		spr.interactive = true;
 
+		spr._extraFields = {};
+		spr._extraFields.layerIndex = layerIndex;
+
 		let inst = this;
+
 		spr.on("mousedown", function () { 
-			console.log("CLICKED THE UP_ARROW_SMALL: " + layerIndex);
+			let li = spr._extraFields.layerIndex;
+			console.log("li = " + li );
+			console.log("CLICKED THE upArrowSmallSprite: " + cedit.layers[li].name + " idx: " + li);
+			if (li <= 0) { 
+				console.log("li = " + li + " is <= " + 0 );
+				return;
+			}
+
+			let temp = null;
+			let newRow = li - 1;
+			if (0 <= newRow ) {
+				temp = cedit.layers[newRow];
+				cedit.layers[newRow] = cedit.layers[li];
+			}
+			console.log("newRow = " + newRow + " cedit.layers.length = " + cedit.layers.length );
+			let newRowPos = newRow * LAYER_BOX_ROW_THICKNESS;
+			let offTheEnd = false;
+			if (newRowPos < 0) {
+				offTheEnd = true;
+				console.log("Off the end: " + newRowPos + " < " + 0 );
+				if ( cedit.layers[li].text != null ) {
+					inst.container.removeChild(cedit.layers[li].text);
+					console.log("GOT HERE :" + li);
+					console.log(cedit.layers[li].text);
+					delete cedit.layers[li].text;
+				}
+				if ( cedit.layers[li].eyeSprite != null ) {
+					inst.container.removeChild(cedit.layers[li].eyeSprite);
+					cedit.layers[li].eyeSprite.destroy();
+					delete cedit.layers[li].eyeSprite;
+				}
+
+				if ( cedit.layers[li].upArrowSmallSprite != null ) {
+					inst.container.removeChild(cedit.layers[li].upArrowSmallSprite);
+					cedit.layers[li].upArrowSmallSprite.destroy();
+					delete cedit.layers[li].upArrowSmallSprite;
+				}
+			
+				if ( cedit.layers[li].downArrowSmallSprite != null ) {
+					inst.container.removeChild(cedit.layers[li].downArrowSmallSprite);
+					cedit.layers[li].downArrowSmallSprite.destroy();
+					delete cedit.layers[li].downArrowSmallSprite;
+				}
+			} else {
+				console.log("Not off the end: " + newRowPos + " >= " + 0 );
+				offTheEnd = false;
+				if (newRow >= 0) {
+					cedit.layers[li].text._extraFields.layerIndex -= 1;
+					cedit.layers[li].eyeSprite._extraFields.layerIndex -= 1;
+					cedit.layers[li].upArrowSmallSprite._extraFields.layerIndex -= 1;
+					cedit.layers[li].downArrowSmallSprite._extraFields.layerIndex -= 1;
+					cedit.layers[li].text.y -= LAYER_BOX_ROW_THICKNESS;
+					console.log("FYI text.y = %d", cedit.layers[li].text.y);
+					console.log("FYI eyeSprite.y = %d", cedit.layers[li].eyeSprite.y);
+					cedit.layers[li].eyeSprite.y -= LAYER_BOX_ROW_THICKNESS;
+					cedit.layers[li].upArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+					cedit.layers[li].downArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+				}
+			}	
+	
+			if (temp != undefined && temp != null) {
+				cedit.layers[li] = temp;
+				if ( temp.text != undefined && temp.text != null ) {
+					console.log("temp.text != null");
+					temp.text._extraFields.layerIndex += 1;	
+					temp.eyeSprite._extraFields.layerIndex += 1;	
+					temp.upArrowSmallSprite._extraFields.layerIndex += 1;	
+					temp.downArrowSmallSprite._extraFields.layerIndex += 1;	
+					temp.text.y += LAYER_BOX_ROW_THICKNESS;
+					temp.eyeSprite.y += LAYER_BOX_ROW_THICKNESS;
+					temp.upArrowSmallSprite.y += LAYER_BOX_ROW_THICKNESS;
+					temp.downArrowSmallSprite.y += LAYER_BOX_ROW_THICKNESS;
+				} else {
+					cedit.layers[li] = temp;
+					console.log("! temp.text != null");
+					let text = inst.makeLayerBoxText(cedit, li);
+					temp.text = text;
+					console.log("Text of text = " + temp.text._text);
+					console.log("Layer index of text = " + li);
+					inst.container.addChild(text);
+				
+					let eyeSprite =  inst.makeEyeSprite(cedit, li);
+					temp.eyeSprite = eyeSprite;
+					inst.container.addChild(eyeSprite);
+
+					let upArrowSmallSprite =  
+						inst.makeUpArrowSmallSprite(cedit, li);
+					temp.upArrowSmallSprite = upArrowSmallSprite;
+					inst.container.addChild(upArrowSmallSprite);
+
+					let downArrowSmallSprite =  
+						inst.makeDownArrowSmallSprite(cedit, li);
+					temp.downArrowSmallSprite = downArrowSmallSprite;
+					inst.container.addChild(downArrowSmallSprite);
+				}
+			} else {
+				console.log("Temp was undefined.  temp was = cedit.layers[" + newRow + "]");
+			}
+			console.log("Layer[" + li + "]'s text = " + cedit.layers[li].text._text);
 		});
 	
-
 		return spr;
 	},
 	makeDownArrowSmallSprite: function(cedit, layerIndex) {
@@ -537,96 +663,119 @@ CEdit.Layerbox.prototype = {
 
 		spr.interactive = true;
 
+		spr._extraFields = {};
+		spr._extraFields.layerIndex = layerIndex;
+
 		let inst = this;
 
 		spr.on("mousedown", function () { 
-			console.log("CLICKED THE DOWN_ARROW_SMALL: " + layerIndex);
-			if (layerIndex >= cedit.layers.length) { return; }
+			let li = spr._extraFields.layerIndex;
+			console.log("li = " + li );
+			console.log("CLICKED THE downArrowSmallSprite: " + cedit.layers[li].name + " idx: " + li);
+			if (li >= cedit.layers.length) { 
+				console.log("li = " + li + " is past cedit.layers.length = " + cedit.layers.length );
+				return;
+			}
 
-			let temp = cedit.layers[layerIndex + 1];
-			cedit.layers[layerIndex + 1] = cedit.layers[layerIndex];
-			let newRowPos = (layerIndex + 1) * LAYER_BOX_ROW_THICKNESS + LAYER_BOX_ROW_THICKNESS;
+			let temp = null;
+			let newRow = li + 1;
+			if (cedit.layers.length > newRow ) {
+				temp = cedit.layers[newRow];
+				cedit.layers[newRow] = cedit.layers[li];
+			}
+			console.log("newRow = " + newRow + " cedit.layers.length = " + cedit.layers.length );
+			let newRowPos = newRow * LAYER_BOX_ROW_THICKNESS + LAYER_BOX_ROW_THICKNESS;
 			let offTheEnd = false;
 			if (newRowPos > LAYER_BOX_HEIGHT ) {
 				offTheEnd = true;
 				console.log("Off the end: " + newRowPos + " > " + LAYER_BOX_HEIGHT );
-				if ( cedit.layers[layerIndex].text != null ) {
-					inst.container.removeChild(cedit.layers[layerIndex].text);
-					console.log("GOT HERE :" + layerIndex);
-					console.log(cedit.layers[layerIndex].text);
-					delete cedit.layers[layerIndex].text;
+				if ( cedit.layers[li].text != null ) {
+					inst.container.removeChild(cedit.layers[li].text);
+					console.log("GOT HERE :" + li);
+					console.log(cedit.layers[li].text);
+					delete cedit.layers[li].text;
 				}
-				if ( cedit.layers[layerIndex].eyeSprite != null ) {
-					inst.container.removeChild(cedit.layers[layerIndex].eyeSprite);
-					cedit.layers[layerIndex].eyeSprite.destroy();
-					delete cedit.layers[layerIndex].eyeSprite;
+				if ( cedit.layers[li].eyeSprite != null ) {
+					console.log("GOT HERE2 :" + li + " cedit.layers[" + li + "].eyeSprite._extraFields.layerIndex = " + cedit.layers[li].eyeSprite._extraFields.layerIndex);
+					inst.container.removeChild(cedit.layers[li].eyeSprite);
+					cedit.layers[li].eyeSprite.destroy();
+					delete cedit.layers[li].eyeSprite;
 				}
 
-				if ( cedit.layers[layerIndex].upArrowSmallSprite != null ) {
-					inst.container.removeChild(cedit.layers[layerIndex].upArrowSmallSprite);
-					cedit.layers[layerIndex].upArrowSmallSprite.destroy();
-					delete cedit.layers[layerIndex].upArrowSmallSprite;
+				if ( cedit.layers[li].upArrowSmallSprite != null ) {
+					console.log("GOT HERE3 :" + li);
+					inst.container.removeChild(cedit.layers[li].upArrowSmallSprite);
+					cedit.layers[li].upArrowSmallSprite.destroy();
+					delete cedit.layers[li].upArrowSmallSprite;
 				}
 			
-				if ( cedit.layers[layerIndex].downArrowSmallSprite != null ) {
-					inst.container.removeChild(cedit.layers[layerIndex].downArrowSmallSprite);
-					cedit.layers[layerIndex].downArrowSmallSprite.destroy();
-					delete cedit.layers[layerIndex].downArrowSmallSprite;
+				if ( cedit.layers[li].downArrowSmallSprite != null ) {
+					console.log("GOT HERE4 :" + li);
+					inst.container.removeChild(cedit.layers[li].downArrowSmallSprite);
+					cedit.layers[li].downArrowSmallSprite.destroy();
+					delete cedit.layers[li].downArrowSmallSprite;
 				}
 			} else {
 				console.log("Not off the end: " + newRowPos + " <= " + LAYER_BOX_HEIGHT );
 				offTheEnd = false;
-				cedit.layers[layerIndex].text.layerIndex += 1;
-				cedit.layers[layerIndex].text.y += LAYER_BOX_ROW_THICKNESS;
-				cedit.layers[layerIndex].eyeSprite.y += LAYER_BOX_ROW_THICKNESS;
-				cedit.layers[layerIndex].downArrowSmallSprite.y += LAYER_BOX_ROW_THICKNESS;
-				cedit.layers[layerIndex].upArrowSmallSprite.y += LAYER_BOX_ROW_THICKNESS;
+				if (newRow < cedit.layers.length) {
+					cedit.layers[li].text._extraFields.layerIndex += 1;
+					cedit.layers[li].eyeSprite._extraFields.layerIndex += 1;
+					cedit.layers[li].upArrowSmallSprite._extraFields.layerIndex += 1;
+					cedit.layers[li].downArrowSmallSprite._extraFields.layerIndex += 1;
+					cedit.layers[li].text.y += LAYER_BOX_ROW_THICKNESS;
+					cedit.layers[li].eyeSprite.y += LAYER_BOX_ROW_THICKNESS;
+					cedit.layers[li].upArrowSmallSprite.y += LAYER_BOX_ROW_THICKNESS;
+					cedit.layers[li].downArrowSmallSprite.y += LAYER_BOX_ROW_THICKNESS;
+				}
 			}	
 	
 			if (temp != undefined && temp != null) {
-				cedit.layers[layerIndex] = temp;
+				cedit.layers[li] = temp;
 				if ( temp.text != undefined && temp.text != null ) {
 					console.log("temp.text != null");
-					temp.text.layerIndex -= 1;	
+					temp.text._extraFields.layerIndex -= 1;	
+					temp.eyeSprite._extraFields.layerIndex -= 1;	
+					temp.upArrowSmallSprite._extraFields.layerIndex -= 1;	
+					temp.downArrowSmallSprite._extraFields.layerIndex -= 1;	
 					temp.text.y -= LAYER_BOX_ROW_THICKNESS;
 					temp.eyeSprite.y -= LAYER_BOX_ROW_THICKNESS;
-					temp.downArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
 					temp.upArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
+					temp.downArrowSmallSprite.y -= LAYER_BOX_ROW_THICKNESS;
 				} else {
-					cedit.layers[layerIndex] = temp;
+					cedit.layers[li] = temp;
 					console.log("! temp.text != null");
-					let text = inst.makeLayerBoxText(cedit, layerIndex);
+					let text = inst.makeLayerBoxText(cedit, li);
 					temp.text = text;
-					temp.text.layerIndex = layerIndex;
 					console.log("Text of text = " + temp.text._text);
-					console.log("Layer index of text = " + layerIndex);
+					console.log("Layer index of text = " + li);
 					inst.container.addChild(text);
 				
-					let eyeSprite =  inst.makeEyeSprite(cedit, layerIndex);
+					let eyeSprite =  inst.makeEyeSprite(cedit, li);
 					temp.eyeSprite = eyeSprite;
 					inst.container.addChild(eyeSprite);
 
 					let upArrowSmallSprite =  
-						inst.makeUpArrowSmallSprite(cedit, layerIndex);
+						inst.makeUpArrowSmallSprite(cedit, li);
 					temp.upArrowSmallSprite = upArrowSmallSprite;
 					inst.container.addChild(upArrowSmallSprite);
 
 					let downArrowSmallSprite =  
-						inst.makeDownArrowSmallSprite(cedit, layerIndex);
+						inst.makeDownArrowSmallSprite(cedit, li);
 					temp.downArrowSmallSprite = downArrowSmallSprite;
 					inst.container.addChild(downArrowSmallSprite);
 				}
 			} else {
-				console.log("Temp was undefined.  temp = cedit.layers[" + (layerIndex + 1) + "]");
+				console.log("Temp was undefined.  temp was = cedit.layers[" + newRow + "]");
 			}
-			console.log("Layer's text = " + cedit.layers[layerIndex].text._text);
+			console.log("Layer[" + li + "]'s text = " + cedit.layers[li].text._text);
 		});
 	
 
 		return spr;
 	},
 	addLayerBoxIcons: function(cedit) {
-		let methodName = ".addLayerBoxIcons(layerBoxContainer)";
+		let methodName = this.className + ".addLayerBoxIcons(layerBoxContainer)";
 		console.log(">>> %s", methodName);
 
 		let y = 0;
@@ -646,6 +795,7 @@ CEdit.Layerbox.prototype = {
 			}
 			y += LAYER_BOX_ROW_THICKNESS;
 		}
+
 
 		console.log("<<< %s", methodName);
 	}
